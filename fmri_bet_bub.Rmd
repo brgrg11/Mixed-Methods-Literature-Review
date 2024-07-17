@@ -1,0 +1,131 @@
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(readxl)
+library(tidyr)
+```
+```{r}
+# load excel
+fmribet <- read_excel("fmri_bet_figs.xlsx")
+```
+```{r}
+# translating acronyms
+region_mapping <- c(
+  "PCC - MFG" = "Posterior cingulate cortex - Middle frontal gyrus",
+  "ANG - IFC" = "Angular gyrus - Inferior frontal cortex",
+  "PCC - IPL" = "Posterior cingulate cortex - Inferior parietal lobule",
+  "PCC -SFG" = "Posterior cingulate cortex - Superior frontal gyrus",
+  "PCC - Precentral Gyrus" = "Posterior cingulate cortex - Precentral gyrus",
+  "PCC - SPL" = "Posterior cingulate cortex - Superior parietal lobule",
+  "AMYG - M1C" = "Amygdala - Primary motor cortex",
+  "AMYG - IOG" = "Amygdala - Inferior occipital gyrus",
+  "Imitation Network - PRCU" = "Imitation network - Precuneus",
+  "Imitation Network - PCC" = "Imitation network - Posterior cingulate cortex",
+  "Imitation Network - ANG" = "Imitation network - Angular gyrus",
+  "Imitation Network - FEF" = "Imitation network - Frontal eye fields",
+  "Imitation Network - PFC" = "Imitation network - Prefrontal cortex",
+  "Imitation Network - AG" = "Imitation network - Angular gyrus",
+  "Imitation Network - OrG" = "Imitation network - Orbitofrontal gyrus",
+  "PRCU - SMG" = "Paracingulate gyrus - Supramarginal gyrus",
+  "IPL - Pericentral Region" = "Inferior parietal lobule - Pericentral region",
+  "Language Regions - PCC" = "Language regions - Posterior cingulate cortex",
+  "Language Regions - LING" = "Language regions - Lingual gyrus",
+  "V1 -  AIC" = "Primary visual cortex - Anterior insula cortex",
+  "TC - S1 - PMC - OL" = "Temporal cortex - Primary somatosensory cortex - Premotor cortex - Occipital lobe",
+  "DMN - CEN" = "Default mode network - Central executive network",
+  "ACC - THL" = "Anterior cingulate cortex - Thalamus",
+  "THL - HES" = "Thalamus - Heschl gyrus",
+  "HES - Sensorimotor Regions" = "Heschl gyrus - Sensorimotor regions",
+  "HES - PoCG - Parietal Regions" = "Heschl gyrus - Postcentral gyrus - Parietal regions",
+  "AC - Frontal Regions" = "Auditory cortex - Frontal regions",
+  "THL - STG" = "Thalamus - Superior temporal gyrus",
+  "THL - Cortex" = "Thalamus - Cortex",
+  "AMYG - mPFC" = "Amygdala - Medial prefrontal cortex",
+  "AMYG -  TL" = "Amygdala - Temporal lobe",
+  "AMYG - STR" = "Amygdala - Striatum",
+  "AMYG - THL" = "Amygdala - Thalamus",
+  "AMYG - CiC" = "Amygdala - Cingulate cortex",
+  "AMYG - CR" = "Amygdala - Cerebellum",
+  "V1 - Precentral Gyrus" = "Primary visual cortex - Precentral gyrus",
+  "V1 - PoCG" = "Primary visual cortex - Postcentral gyrus",
+  "V1 - STR" = "Primary visual cortex - Striatum",
+  "V1 - THL" = "Primary visual cortex - Thalamus",
+  "VLPFC - ACC" = "Ventrolateral prefrontal cortex - Anterior cingulate cortex",
+  "SNE - CEN" = "Salience network - Central executive network",
+  "SNE - DMN" = "Salience network - Default mode network",
+  "VAN - SMM" = "Ventral attention network - Somatomotor mouth",
+  "DMN - SNE - CEN" = "Default mode network - Salience network - Central executive network",
+  "DMN - SFG/Paracingulate" = "Default mode network - Superior frontal gyrus/Paracingulate gyrus",
+  "Striatal Network - MTG" = "Striatal network - Middle temporal gyrus",
+  "INS - PFC" = "Insula - Prefrontal cortex",
+  "FL - Other" = "Frontal lobe - Other",
+  "Paracingulate  - PFC" = "Paracingulate gyrus - Prefrontal cortex",
+  "Paracingulate - MFG" = "Paracingulate gyrus - Middle frontal gyrus",
+  "Paracingulate - IPL" = "Paracingulate gyrus - Inferior parietal lobule",
+  "Paracingulate - SMG" = "Paracingulate gyrus - Supramarginal gyrus",
+  "THL - S1" = "Thalamus - Primary somatosensory cortex",
+  "THL - OC" = "Thalamus - Occipital cortex",
+  "THL - aPFC" = "Thalamus - Anterior prefrontal cortex",
+  "THL - CR" = "Thalamus - Cingulate cortex",
+  "CUN - IFG - MTG" = "Cuneus - Inferior frontal gyrus - Middle temporal gyrus",
+  "AIC - Sensory-Motor Regions" = "Anterior insula cortex - Sensory-motor regions",
+  "Striatal Network - MTG" = "Striatal network - Middle temporal gyrus"
+)
+```
+```{r}
+# apply translation to acronyms
+fmribet$Region <- region_mapping[fmribet$Region]
+```
+
+```{r}
+# generating bubbe plot 
+data_summary <- fmribet %>%
+  group_by(Metric, Region) %>%
+  summarise(
+    DirectionalitySum = dir,
+    proportion = prop
+  )
+
+data_summary <- data_summary[!is.na(data_summary$Region) & !is.na(data_summary$Metric), ]
+
+bubble_plot <- ggplot(data_summary, aes(Metric, fct_rev(Region), fill = DirectionalitySum)) + 
+  geom_point(aes(size = cut(proportion, breaks = 3)), shape = 21, stroke = .5, alpha = 0.8) + 
+  geom_hline(yintercept = seq(.5, 56, 1), size = 0.1) +
+  scale_size_manual(values = c(8, 12, 16)) + 
+  scale_fill_gradient(low = "blue", high = "red", breaks = c(-1, 1),
+                      labels = c("Negative", "Positive"), limits = c(-1, 1)) + 
+  theme_minimal() + 
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 30),
+    legend.title = element_text(size = 40, vjust = 2, margin = margin(b = 16)),
+    axis.text.x = element_text(size = 38),  
+    axis.text.y = element_text(size = 46),  
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.spacing = unit(4, "cm"),
+    axis.title.x = element_text(size = 40, margin = margin(t = 20)),
+    axis.title.y = element_text(size = 40, margin = margin(r = 20)),
+    plot.title = element_text(hjust = 0.5, size = 50, margin = margin(b = 20)),
+    legend.margin = margin(0, 0, 0, 20)
+  ) +
+  ggtitle("Brain Region (Between) and Metric Trends of fMRI Literature") + 
+  guides(
+    size = guide_legend(
+      title = "Sample Size:",
+      override.aes = list(fill = "white", color = "black", shape = 21, stroke = 1)
+    ),
+    fill = guide_colorbar(
+      ticks.colour = NA,
+      title.position = "top",
+      order = 2,
+      barheight = 15,
+      barwidth = 2
+    )
+  ) + 
+  labs(size = "Proportion (Scaled)", fill = "Directionality:", x = "Metric", y = "Brain Region")
+
+
+ggsave("bubble_plot.png", plot = bubble_plot, width = 40, height = 36, limitsize = FALSE, units = "in", bg = "white")
+```
