@@ -1,2 +1,2 @@
-# Mixed-Methods-Literature-Review
+# Mixed Methods Literature Review
 Identifying and visualizing trends in neuroimaging modality literature 
